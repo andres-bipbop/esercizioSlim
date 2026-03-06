@@ -1,0 +1,41 @@
+# --- Dipendenze (Vendor) ---
+# Escludiamo tutte le cartelle vendor, sia in root che nelle sottocartelle
+**/vendor/
+
+# --- Configurazioni Sensibili e Credenziali ---
+# Escludiamo i file di configurazione con password del DB
+# Nota: è meglio caricare un file "config.example.php" vuoto su Git
+backend/App/Config/config.php
+frontend/App/Config/config.php
+.env
+.env.local
+.env.*.local
+
+# --- File Temporanei e Logs ---
+*.log
+**/logs/
+**/cache/
+**/tmp/
+
+# --- Sistema Operativo ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- IDE e Editor ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+
+# --- File di sistema di Apache (se generati dal sistema) ---
+.htaccess.bak
+.htaccess.save
+
+# --- Package Manager (facoltativo) ---
+# Se userai npm/node per il frontend in futuro
+**/node_modules/
+npm-debug.log*

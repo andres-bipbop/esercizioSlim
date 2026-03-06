@@ -1,0 +1,12 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Se la richiesta inizia con backend/, vai alla cartella backend/public
+    RewriteRule ^backend/(.*)$ backend/public/$1 [L]
+
+    # Se la richiesta inizia con frontend/ (o per tutto il resto), vai a frontend/public
+    RewriteRule ^frontend/(.*)$ frontend/public/$1 [L]
+    
+    # Redirect automatico della root alla dashboard del frontend
+    RewriteRule ^$ /esercizioFornitoriSlim/frontend/public/homepage [R=301,L]
+</IfModule>

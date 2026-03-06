@@ -1,0 +1,12 @@
+# Impedisce il listing dei file (non mostra l'elenco delle cartelle nel browser)
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine on
+
+    # Se la richiesta NON è già per la cartella public...
+    RewriteCond %{REQUEST_URI} !^/public/
+    
+    # ...reindirizza tutto a public/ mantenendo il resto dell'URL
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

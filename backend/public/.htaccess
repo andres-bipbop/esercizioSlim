@@ -1,0 +1,10 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Non riscrivere se il file o la cartella esistono davvero (es. immagini o script)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Manda tutto a index.php
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
