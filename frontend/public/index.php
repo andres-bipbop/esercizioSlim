@@ -20,7 +20,30 @@ $app->get('/', function (Request $request, Response $response) {
 });
 
 $app->get('/homepage', function (Request $request, Response $response) {
+    
+    $cookies = $request->getCookieParams();
+    $token = $cookies['auth_token'] ?? null;
+
+    if (!$token) {
+        return $response
+            ->withHeader('Location', '/esercizioSlim/frontend/login')
+            ->withStatus(302);
+    }
+
     $templatePath = __DIR__ . '/../Templates/homepage.php';
+
+    if (file_exists($templatePath)) {
+        $html = file_get_contents($templatePath);
+        $response->getBody()->write($html);
+        return $response->withHeader('Content-Type', 'text/html');
+    }
+
+    $response->getBody()->write("Error: template not found");
+    return $response->withStatus(404);
+});
+
+$app->get('/login', function (Request $request, Response $response) {
+    $templatePath = __DIR__ . '/../Templates/login.php';
 
     if (file_exists($templatePath)) {
         $html = file_get_contents($templatePath);

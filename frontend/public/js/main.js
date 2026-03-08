@@ -25,7 +25,7 @@ async function loadData(page = 1) {
     loader.style.display = 'block';
 
     try{
-        const response = await fetch(`${API_BASE_URL}/${queryId}?page=${page}&limit=${DEFAULT_LIMIT}`);
+        const response = await fetch(`${API_BASE_URL}/${queryId}?page=${page}&limit=${DEFAULT_LIMIT}`, {credentials: 'include'});
         const result = await response.json();
 
         if(result.success) {
@@ -154,7 +154,7 @@ async function showDetails(resource, id) {
 
     try {
         // Chiamata alla rotta specifica (pezzi o fornitori)
-        const response = await fetch(`${API_BASE_URL}/${resource}/${id}`);
+        const response = await fetch(`${API_BASE_URL}/${resource}/${id}`, {credentials: 'include'});
         const result = await response.json();
 
         if (result.success) {

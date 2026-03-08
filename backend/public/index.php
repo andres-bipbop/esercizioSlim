@@ -61,24 +61,20 @@ $queries = [
 
 //middleware verifica token JWT
 
-$jwtMiddleware = function (Request $request, $handler) use ($response) {
+$jwtMiddleware = function (Request $request, $handler) use ($pdo) {
 
-    // 1. Estrai l'header Authorization dalla richiesta
-    $authHeader = $request->getHeaderLine('Authorization');
+    $response = new \Slim\Psr7\Response();
 
-    // 2. Controlla che l'header esista e abbia il formato "Bearer <token>"
-    if (empty($authHeader) || !preg_match('/^Bearer\s+(.+)$/i', $authHeader, $matches)) {
-        // Header assente o malformato → 401 Unauthorized
+    $cookies = $request->getCookieParams();
+    $token = $cookies['auth_token'] ?? null;
+
+    if (!$token) {
         $response->getBody()->write(json_encode([
             "success" => false,
-            "error"   => "Token mancante o malformato"
+            "error"   => "Token mancante. Accedi di nuovo."
         ]));
-        return $response
-            ->withHeader('Content-Type', 'application/json')
-            ->withStatus(401);
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
     }
-
-    $token = $matches[1]; // Il token JWT grezzo
 
     // 3. Verifica effettiva della firma JWT
     //    → Da implementare qui con una libreria (es. firebase/php-jwt)
@@ -86,9 +82,8 @@ $jwtMiddleware = function (Request $request, $handler) use ($response) {
     //    → Se il token è scaduto (claim "exp") restituisci 401
     //    → Se la verifica ha successo, leggi il payload (claims: sub, role, ecc.)
     try {
-        // $decoded = JWT::decode($token, new Key(JWT_SECRET, 'HS256'));
-        // Aggiungi il payload decodificato alla request per usarlo nelle rotte
-        // $request = $request->withAttribute('jwt_payload', $decoded);
+        $decoded = JWT::decode($token, new Key(JWT_SECRET_KEY, "HS256"));
+        $request = $request->withAttribute('jwt_payload', $decoded); // payload decodificato alla request per usarlo nelle rotte
     } catch (Exception $e) {
         $response->getBody()->write(json_encode([
             "success" => false,
@@ -113,11 +108,6 @@ $app->post('/api/v1/login', function (Request $request, Response $response) use 
     $body = json_decode((string) $request->getBody(), true);
     $username = $body['username'] ?? null;
     $password = $body['password'] ?? null;
-
-    // TODO: sostituire con verifica reale su DB
-    $validUsers = [
-        'admin' => 'password123'
-    ];
 
     try {
         $sqlUtenti = "SELECT * FROM utenti_fornitori WHERE nome_utente = :username";
@@ -148,25 +138,27 @@ $app->post('/api/v1/login', function (Request $request, Response $response) use 
         'nbf' => time(),
         'exp' => time() + 3600, // 1 ora di validità
         'userdata' => [
-            'id' => $userdata['id'],
+            'id' => "{$userdata['id']}",
             'nome_utente' => $userdata['nome_utente'],
             'email' => $userdata['email'],
-            'id_fornitore' => $userdata['id_azienda']
+            'id_fornitore' => "{$userdata['id_azienda']}"
         ]
     ];
 
     $token = JWT::encode($payload, JWT_SECRET_KEY,'HS256');
 
-    $response->getBody()->write(json_encode([
-        "success" => true,
-        "token"   => $token
-    ]));
-    return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+    $cookieValue = sprintf(
+        'auth_token=%s; HttpOnly; SameSite=Strict; Path=/;',
+        $token
+    );
+
+    $response->getBody()->write(json_encode(["success" => true]));
+    return $response->withHeader('Content-Type', 'application/json')->withHeader('Set-Cookie', $cookieValue)->withStatus(200);
 
     } catch (PDOException $e) {
         $response->getBody()->write(json_encode([
             "success" => false,
-            "error"   => $e->getMessage()
+            "error" => $e->getMessage()
         ]));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
     }
@@ -185,7 +177,7 @@ $app->get('/api/v2', function (Request $request, Response $response) use ($queri
 
     $response->getBody()->write(json_encode($payload, JSON_PRETTY_PRINT));
     return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-});
+})->add($jwtMiddleware);
 
 $app->get('/api/v2/{id}', function (Request $request, Response $response, array $args) use ($pdo, $queries) {
     $id = (int) $args['id'];
@@ -238,7 +230,7 @@ $app->get('/api/v2/{id}', function (Request $request, Response $response, array 
 
     $response->getBody()->write(json_encode($result, JSON_PRETTY_PRINT));
     return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-});
+})->add($jwtMiddleware);
 
 $app->get('/api/v2/product/{id}', function ($request, $response, $args) use ($pdo) {
     $stmt = $pdo->prepare("SELECT * FROM pezzi WHERE pid = :id");
@@ -248,7 +240,7 @@ $app->get('/api/v2/product/{id}', function ($request, $response, $args) use ($pd
     $result = $data ? ["success" => true, "data" => $data] : ["success" => false, "error" => "Product not found"];
     $response->getBody()->write(json_encode($result));
     return $response->withHeader('Content-Type', 'application/json');
-});
+})->add($jwtMiddleware);
 
 $app->get('/api/v2/supplier/{id}', function ($request, $response, $args) use ($pdo) {
     $stmt = $pdo->prepare("SELECT * FROM fornitori WHERE fid = :id");
@@ -258,7 +250,7 @@ $app->get('/api/v2/supplier/{id}', function ($request, $response, $args) use ($p
     $result = $data ? ["success" => true, "data" => $data] : ["success" => false, "error" => "Fornitore non trovato"];
     $response->getBody()->write(json_encode($result));
     return $response->withHeader('Content-Type', 'application/json');
-});
+})->add($jwtMiddleware);
 
 $app->run();
 
