@@ -58,7 +58,9 @@ $queries = [
     9 => "SELECT DISTINCT c.fid FROM Catalogo c JOIN Pezzi p ON c.pid = p.pid WHERE p.colore IN ('rosso', 'verde')",
     10 => "SELECT pid FROM Catalogo GROUP BY pid HAVING COUNT(DISTINCT fid) >= 2"
 ];
-/*
+
+//middleware verifica token JWT
+
 $jwtMiddleware = function (Request $request, $handler) use ($response) {
 
     // 1. Estrai l'header Authorization dalla richiesta
@@ -97,7 +99,7 @@ $jwtMiddleware = function (Request $request, $handler) use ($response) {
 
     // 4. Token valido → passa il controllo alla rotta
     return $handler->handle($request);
-};*/
+};
 
 $app->get('/', function (Request $request, Response $response) {
     // Restituisce una risposta che reindirizza a /api/v2 con codice stato 302 (temporaneo)
