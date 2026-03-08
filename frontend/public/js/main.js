@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost/esercizioSlim/backend/api';
+const API_BASE_URL = 'http://localhost/esercizioSlim/backend/api/v2';
 const DEFAULT_LIMIT = 10;
 
 const dictionary = {
