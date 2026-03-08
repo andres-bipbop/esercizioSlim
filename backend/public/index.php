@@ -3,6 +3,8 @@
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 require __DIR__ . '/../App/bootstrap.php';
 
@@ -56,12 +58,116 @@ $queries = [
     9 => "SELECT DISTINCT c.fid FROM Catalogo c JOIN Pezzi p ON c.pid = p.pid WHERE p.colore IN ('rosso', 'verde')",
     10 => "SELECT pid FROM Catalogo GROUP BY pid HAVING COUNT(DISTINCT fid) >= 2"
 ];
+/*
+$jwtMiddleware = function (Request $request, $handler) use ($response) {
+
+    // 1. Estrai l'header Authorization dalla richiesta
+    $authHeader = $request->getHeaderLine('Authorization');
+
+    // 2. Controlla che l'header esista e abbia il formato "Bearer <token>"
+    if (empty($authHeader) || !preg_match('/^Bearer\s+(.+)$/i', $authHeader, $matches)) {
+        // Header assente o malformato → 401 Unauthorized
+        $response->getBody()->write(json_encode([
+            "success" => false,
+            "error"   => "Token mancante o malformato"
+        ]));
+        return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus(401);
+    }
+
+    $token = $matches[1]; // Il token JWT grezzo
+
+    // 3. Verifica effettiva della firma JWT
+    //    → Da implementare qui con una libreria (es. firebase/php-jwt)
+    //    → Se la firma non è valida lancia un'eccezione e restituisci 401
+    //    → Se il token è scaduto (claim "exp") restituisci 401
+    //    → Se la verifica ha successo, leggi il payload (claims: sub, role, ecc.)
+    try {
+        // $decoded = JWT::decode($token, new Key(JWT_SECRET, 'HS256'));
+        // Aggiungi il payload decodificato alla request per usarlo nelle rotte
+        // $request = $request->withAttribute('jwt_payload', $decoded);
+    } catch (Exception $e) {
+        $response->getBody()->write(json_encode([
+            "success" => false,
+            "error"   => "Token non valido: " . $e->getMessage()
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+    }
+
+    // 4. Token valido → passa il controllo alla rotta
+    return $handler->handle($request);
+};*/
 
 $app->get('/', function (Request $request, Response $response) {
-    // Restituisce una risposta che reindirizza a /api con codice stato 302 (temporaneo)
+    // Restituisce una risposta che reindirizza a /api/v2 con codice stato 302 (temporaneo)
     return $response
-        ->withHeader('Location', '/esercizioFornitoriSlim/backend/api/v2')
+        ->withHeader('Location', '/esercizioSlim/backend/api/v2')
         ->withStatus(302);
+});
+
+$app->post('/api/v1/login', function (Request $request, Response $response) use ($pdo) {
+
+    $body = json_decode((string) $request->getBody(), true);
+    $username = $body['username'] ?? null;
+    $password = $body['password'] ?? null;
+
+    // TODO: sostituire con verifica reale su DB
+    $validUsers = [
+        'admin' => 'password123'
+    ];
+
+    try {
+        $sqlUtenti = "SELECT * FROM utenti_fornitori WHERE nome_utente = :username";
+        $stmtUtenti = $pdo->prepare($sqlUtenti);
+        $stmtUtenti->bindValue(':username', $username);
+        $stmtUtenti->execute();
+        $userdata = $stmtUtenti->fetch(PDO::FETCH_ASSOC);
+
+        if (!$userdata) {
+            $response->getBody()->write(json_encode([
+                "success" => false,
+                "error"   => "Nome utente non trovato"
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+        }
+        else if (!password_verify($password, $userdata['password'])) {
+            $response->getBody()->write(json_encode([
+                "success" => false,
+                "error"   => "Password errata"
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+        }
+
+        $payload = [
+        'iss' => 'localhost',
+        'aud' => 'localhost',
+        'iat' => time(),
+        'nbf' => time(),
+        'exp' => time() + 3600, // 1 ora di validità
+        'userdata' => [
+            'id' => $userdata['id'],
+            'nome_utente' => $userdata['nome_utente'],
+            'email' => $userdata['email'],
+            'id_fornitore' => $userdata['id_azienda']
+        ]
+    ];
+
+    $token = JWT::encode($payload, JWT_SECRET_KEY,'HS256');
+
+    $response->getBody()->write(json_encode([
+        "success" => true,
+        "token"   => $token
+    ]));
+    return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+
+    } catch (PDOException $e) {
+        $response->getBody()->write(json_encode([
+            "success" => false,
+            "error"   => $e->getMessage()
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+    }
 });
 
 $app->get('/api/v2', function (Request $request, Response $response) use ($queries){
