@@ -9,13 +9,13 @@ require __DIR__ . '/../App/bootstrap.php';
 $app = AppFactory::create();
 
 $app->addRoutingMiddleware(); // Importa il Router originale di Slim che analizza l'URL richiesto e cerca una rotta corrispondente
-$app->setBasePath('/esercizioFornitoriSlim/frontend');
+$app->setBasePath('/esercizioSlim/frontend');
 $app->addErrorMiddleware(true, true, true);
 
 $app->get('/', function (Request $request, Response $response) {
     // Restituisce una risposta che reindirizza a /api con codice stato 302 (temporaneo)
     return $response
-        ->withHeader('Location', '/esercizioFornitoriSlim/frontend/homepage')
+        ->withHeader('Location', '/esercizioSlim/frontend/homepage')
         ->withStatus(302);
 });
 

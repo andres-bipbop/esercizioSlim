@@ -23,10 +23,10 @@ $app->options('/{routes:.+}', function ($request, $response, $args) {
 });
 
 $app->addRoutingMiddleware(); // Importa il Router originale di Slim che analizza l'URL richiesto e cerca una rotta corrispondente
-$app->setBasePath('/esercizioFornitoriSlim/backend');
-
+$app->setBasePath('/esercizioSlim/backend');
 $app->addErrorMiddleware(true, true, true);
 
+// Connessione database
 try {
     $dsn = "mysql:host=" . HOST_DB . ";dbname=" . NAME_DB . ";charset=utf8mb4";
 
@@ -41,6 +41,8 @@ try {
 } catch (PDOException $e){
     die(json_encode(["error" => "Errore di connessione al database: " . $e->getMessage()]));
 }
+
+// Defizione query
 
 $queries = [
     1 => "SELECT DISTINCT p.pid, p.pnome FROM Pezzi p JOIN Catalogo c ON p.pid = c.pid",
@@ -58,18 +60,18 @@ $queries = [
 $app->get('/', function (Request $request, Response $response) {
     // Restituisce una risposta che reindirizza a /api con codice stato 302 (temporaneo)
     return $response
-        ->withHeader('Location', '/esercizioFornitoriSlim/backend/api')
+        ->withHeader('Location', '/esercizioFornitoriSlim/backend/api/v2')
         ->withStatus(302);
 });
 
-$app->get('/api', function (Request $request, Response $response) use ($queries){
+$app->get('/api/v2', function (Request $request, Response $response) use ($queries){
     $endpoints = [];
     foreach ($queries as $id => $sql) {
-        $endpoints["query_$id"] = "api/" . $id;
+        $endpoints["query_$id"] = "api/v2" . $id;
     }
 
     $payload = [
-        "message" => "Welcome to the Catalague API",
+        "message" => "Welcome to the Catalague API v2",
         "endpoints" => $endpoints
     ];
 
@@ -77,7 +79,7 @@ $app->get('/api', function (Request $request, Response $response) use ($queries)
     return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 });
 
-$app->get('/api/{id}', function (Request $request, Response $response, array $args) use ($pdo, $queries) {
+$app->get('/api/v2/{id}', function (Request $request, Response $response, array $args) use ($pdo, $queries) {
     $id = (int) $args['id'];
 
     if(!isset($queries[$id])) {
@@ -130,7 +132,7 @@ $app->get('/api/{id}', function (Request $request, Response $response, array $ar
     return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 });
 
-$app->get('/api/product/{id}', function ($request, $response, $args) use ($pdo) {
+$app->get('/api/v2/product/{id}', function ($request, $response, $args) use ($pdo) {
     $stmt = $pdo->prepare("SELECT * FROM pezzi WHERE pid = :id");
     $stmt->execute(['id' => $args['id']]);
     $data = $stmt->fetch();
@@ -140,7 +142,7 @@ $app->get('/api/product/{id}', function ($request, $response, $args) use ($pdo) 
     return $response->withHeader('Content-Type', 'application/json');
 });
 
-$app->get('/api/supplier/{id}', function ($request, $response, $args) use ($pdo) {
+$app->get('/api/v2/supplier/{id}', function ($request, $response, $args) use ($pdo) {
     $stmt = $pdo->prepare("SELECT * FROM fornitori WHERE fid = :id");
     $stmt->execute(['id' => $args['id']]);
     $data = $stmt->fetch();
