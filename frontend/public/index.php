@@ -3,6 +3,8 @@
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 require __DIR__ . '/../App/bootstrap.php';
 
@@ -24,7 +26,7 @@ $app->get('/homepage', function (Request $request, Response $response) {
     $cookies = $request->getCookieParams();
     $token = $cookies['auth_token'] ?? null;
 
-    if (!$token) {
+    if (!verifyToken($token)) {
         return $response
             ->withHeader('Location', '/esercizioSlim/frontend/login')
             ->withStatus(302);
@@ -42,8 +44,18 @@ $app->get('/homepage', function (Request $request, Response $response) {
     return $response->withStatus(404);
 });
 
-$app->get('/login', function (Request $request, Response $response) {
-    $templatePath = __DIR__ . '/../Templates/login.php';
+$app->get('/dashboard', function (Request $request, Response $response) {
+    
+    $cookies = $request->getCookieParams();
+    $token = $cookies['auth_token'] ?? null;
+
+    if (!verifyToken($token)) {
+        return $response
+            ->withHeader('Location', '/esercizioSlim/frontend/login')
+            ->withStatus(302);
+    }
+
+    $templatePath = __DIR__ . '/../Templates/dashboard.html';
 
     if (file_exists($templatePath)) {
         $html = file_get_contents($templatePath);
@@ -55,7 +67,38 @@ $app->get('/login', function (Request $request, Response $response) {
     return $response->withStatus(404);
 });
 
+$app->get('/login', function (Request $request, Response $response) {
+    $templatePath = __DIR__ . '/../Templates/login.php';
+
+    if (file_exists($templatePath)) {
+
+        $cookies = $request->getCookieParams();
+        $token = $cookies['auth_token'] ?? null;
+
+        if (verifyToken($token)) {
+            return $response
+                ->withHeader('Location', '/esercizioSlim/frontend/dashboard')
+                ->withStatus(302);
+        }
+        $html = file_get_contents($templatePath);
+        $response->getBody()->write($html);
+        return $response->withHeader('Content-Type', 'text/html');
+    }
+
+    $response->getBody()->write("Error: template not found");
+    return $response->withStatus(404);
+});
+
 $app->run();
 
-
-
+function verifyToken($token) {
+    if (!$token) {
+        return false;
+    }
+    try {
+        $decoded = JWT::decode($token, new Key(JWT_SECRET_KEY, "HS256"));
+    } catch (Exception $e) {
+        return false;
+    }
+    return true;
+}

@@ -156,6 +156,7 @@ async function showDetails(resource, id) {
         // Chiamata alla rotta specifica (pezzi o fornitori)
         const response = await fetch(`${API_BASE_URL}/${resource}/${id}`, {credentials: 'include'});
         const result = await response.json();
+        console.log(result);
 
         if (result.success) {
             renderModalContent(result.data, resource);
@@ -167,7 +168,7 @@ async function showDetails(resource, id) {
     }
 }
 
-function renderModalContent(data, type) {
+function renderModalContent(data) {
     const modalContent = document.getElementById('modalContent');
     
     let html = `<div class="list-group list-group-flush">`;

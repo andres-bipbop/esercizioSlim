@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Gestione Fornitori - Dashboard</title>
+        <title>Gestione Magazzino - Dashboard</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <style>
             .loader { display: none; }
@@ -14,8 +14,8 @@
         <div class="container py-5">
             <div class="row mb-4 text-center">
                 <div class="col">
-                    <h1 class="display-5 fw-bold text-primary">📦 Catalogo Fornitori</h1>
-                    <p class="lead">Seleziona una query per visualizzare i dati in tempo reale.</p>
+                    <h1 class="display-5 fw-bold text-primary">📦 Gestione Magazzino</h1>
+                    <button class="btn btn-primary" onclick="window.location.href='/esercizioSlim/frontend/dashboard'">Vai alla dashboard</button>
                 </div>
             </div>
 
